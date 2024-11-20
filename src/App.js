@@ -1,234 +1,309 @@
-import React, { useState } from "react";
-import { FiPlus, FiSearch, FiEdit2, FiTrash2 } from "react-icons/fi";
+'use client'
 
-const ClassManagement = () => {
-  const [showModal, setShowModal] = useState(false);
-  const [classes, setClasses] = useState([
-    {
-      id: 1,
-      className: "Advanced Mathematics",
-      subject: "Mathematics",
-      schedule: "Mon, Wed 10:00 AM",
-      students: 25,
-      progress: 75,
-      image: "images.unsplash.com/photo-1509062522246-3755977927d7"
-    },
-    {
-      id: 2,
-      className: "Physics 101",
-      subject: "Physics",
-      schedule: "Tue, Thu 2:00 PM",
-      students: 20,
-      progress: 60,
-      image: "images.unsplash.com/photo-1606326608606-aa0b62935f2b"
+import React, { useState } from "react"
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore"
+import bcrypt from "bcryptjs"
+import app from "./firebaseConfig"
+
+const auth = getAuth(app)
+const db = getFirestore(app)
+
+export default function App() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [role, setRole] = useState("")
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [isRegister, setIsRegister] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userRole, setUserRole] = useState("")
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdminRegister, setIsAdminRegister] = useState(false)
+
+  const handleRoleSelection = (selectedRole) => {
+    setRole(selectedRole)
+    setError("")
+  }
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault()
+    setError("")
+    setSuccess("")
+
+    if (!email || !email.includes("@")) {
+      setError("Por favor, introduce un correo válido.")
+      return
     }
-  ]);
-
-  const [formData, setFormData] = useState({
-    className: "",
-    subject: "",
-    schedule: ""
-  });
-
-  const [errors, setErrors] = useState({});
-  const [selectedClass, setSelectedClass] = useState(null);
-
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.className.trim()) newErrors.className = "Class name is required";
-    if (!formData.subject.trim()) newErrors.subject = "Subject is required";
-    if (!formData.schedule.trim()) newErrors.schedule = "Schedule is required";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validateForm()) {
-      const newClass = {
-        id: classes.length + 1,
-        ...formData,
-        students: 0,
-        progress: 0,
-        image: "images.unsplash.com/photo-1513258496099-48168024aec0"
-      };
-      setClasses([...classes, newClass]);
-      setFormData({ className: "", subject: "", schedule: "" });
-      setShowModal(false);
+    if (!password || password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.")
+      return
     }
-  };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: "" });
+    try {
+      if (isRegister) {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+        const user = userCredential.user
+
+        const hashedPassword = await bcrypt.hash(password, 10)
+
+        const collectionName = role === "maestro" ? "maestros" : "estudiantes"
+        await setDoc(doc(db, collectionName, user.uid), {
+          email,
+          role,
+          password: hashedPassword,
+        })
+
+        setSuccess(`Usuario registrado con éxito: ${user.email}`)
+        setUserRole(role)
+        setIsLoggedIn(true)
+      } else {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password)
+        const user = userCredential.user
+
+        const collectionName = role === "maestro" ? "maestros" : "estudiantes"
+        const docRef = doc(db, collectionName, user.uid)
+        const docSnap = await getDoc(docRef)
+
+        if (docSnap.exists()) {
+          const userData = docSnap.data()
+
+          const isPasswordValid = await bcrypt.compare(password, userData.password)
+          if (!isPasswordValid) {
+            setError("Contraseña incorrecta. Inténtalo de nuevo.")
+            return
+          }
+
+          if (userData.role !== role) {
+            setError("El rol seleccionado no coincide con tu cuenta.")
+            return
+          }
+
+          setUserRole(userData.role)
+          setSuccess(`Inicio de sesión exitoso: ${user.email}`)
+          setIsLoggedIn(true)
+        } else {
+          setError("No se encontró información del usuario en la colección correspondiente.")
+          return
+        }
+      }
+    } catch (err) {
+      if (err.code === "auth/user-not-found") {
+        setError("Usuario no encontrado. Por favor, regístrate.")
+      } else if (err.code === "auth/wrong-password") {
+        setError("Contraseña incorrecta. Inténtalo de nuevo.")
+      } else if (err.code === "auth/email-already-in-use") {
+        setError("El correo ya está registrado. Intenta iniciar sesión.")
+      } else {
+        setError("Error: " + err.message)
+      }
     }
-  };
+  }
 
-  const StudentTable = ({ classData }) => (
-    <div className="overflow-x-auto bg-white rounded-lg shadow p-4">
-      <h3 className="text-xl font-bold mb-4">Student Progress - {classData.className}</h3>
-      <table className="min-w-full table-auto">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="px-4 py-2">Student Name</th>
-            <th className="px-4 py-2">Attendance</th>
-            <th className="px-4 py-2">Progress</th>
-            <th className="px-4 py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {[...Array(5)].map((_, index) => (
-            <tr key={index} className="border-b">
-              <td className="px-4 py-2">Student {index + 1}</td>
-              <td className="px-4 py-2">{Math.floor(Math.random() * 100)}%</td>
-              <td className="px-4 py-2">
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    className="bg-blue-600 h-2.5 rounded-full"
-                    style={{ width: `${Math.floor(Math.random() * 100)}%` }}
-                  ></div>
-                </div>
-              </td>
-              <td className="px-4 py-2">
-                <button className="text-blue-600 hover:text-blue-800 mr-2">
-                  <FiEdit2 />
-                </button>
-                <button className="text-red-600 hover:text-red-800">
-                  <FiTrash2 />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  const handleAdminLogin = async (e) => {
+    e.preventDefault()
+    setError("")
+    setSuccess("")
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Class Management Dashboard</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
-        >
-          <FiPlus /> Create Class
-        </button>
-      </div>
+    if (!email || !email.includes("@")) {
+      setError("Por favor, introduce un correo válido.")
+      return
+    }
+    if (!password || password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.")
+      return
+    }
 
-      {/* Search Bar */}
-      <div className="relative mb-8">
-        <input
-          type="text"
-          placeholder="Search classes..."
-          className="w-full p-4 pl-12 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-      </div>
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      const user = userCredential.user
 
-      {/* Class Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {classes.map((classItem) => (
-          <div
-            key={classItem.id}
-            onClick={() => setSelectedClass(classItem)}
-            className="bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-transform"
+      const docRef = doc(db, "administrador", user.uid)
+      const docSnap = await getDoc(docRef)
+
+      if (docSnap.exists()) {
+        const userData = docSnap.data()
+        const isPasswordValid = await bcrypt.compare(password, userData.password)
+        if (!isPasswordValid) {
+          setError("Contraseña incorrecta. Inténtalo de nuevo.")
+          return
+        }
+
+        setUserRole("admin")
+        setIsAdmin(true)
+        setSuccess(`Inicio de sesión de administrador exitoso: ${user.email}`)
+        setIsLoggedIn(true)
+      } else {
+        setError("No se encontró información del administrador.")
+      }
+    } catch (err) {
+      setError("Error de inicio de sesión de administrador: " + err.message)
+    }
+  }
+
+  const handleAdminRegister = async (e) => {
+    e.preventDefault()
+    setError("")
+    setSuccess("")
+
+    if (!email || !email.includes("@")) {
+      setError("Por favor, introduce un correo válido.")
+      return
+    }
+    if (!password || password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.")
+      return
+    }
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const user = userCredential.user
+
+      const hashedPassword = await bcrypt.hash(password, 10)
+
+      await setDoc(doc(db, "administrador", user.uid), {
+        email,
+        password: hashedPassword,
+        role: "admin"
+      })
+
+      setSuccess(`Administrador registrado con éxito: ${user.email}`)
+      setIsAdminRegister(false)
+    } catch (err) {
+      if (err.code === "auth/email-already-in-use") {
+        setError("El correo ya está registrado. Intenta iniciar sesión.")
+      } else {
+        setError("Error al registrar administrador: " + err.message)
+      }
+    }
+  }
+
+  const handleLogout = () => {
+    setIsLoggedIn(false)
+    setEmail("")
+    setPassword("")
+    setRole("")
+    setUserRole("")
+    setIsAdmin(false)
+    setError("")
+    setSuccess("")
+    setIsAdminRegister(false)
+  }
+
+  if (isLoggedIn) {
+    return (
+      <div className="w-full max-w-md mx-auto mt-8 bg-white shadow-md rounded-lg overflow-hidden">
+        <div className="px-6 py-4">
+          <h2 className="text-2xl font-bold mb-2">Dashboard {userRole}</h2>
+          <p className="mb-4">Bienvenido, has iniciado sesión como {userRole}.</p>
+          <button
+            onClick={handleLogout}
+            className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           >
-            <img
-              src={`https://${classItem.image}`}
-              alt={classItem.className}
-              className="w-full h-48 object-cover"
-            />
-            <div className="p-6">
-              <h3 className="text-xl font-bold mb-2">{classItem.className}</h3>
-              <p className="text-gray-600 mb-2">{classItem.subject}</p>
-              <p className="text-gray-500 mb-4">{classItem.schedule}</p>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">{classItem.students} Students</span>
-                <div className="w-24 bg-gray-200 rounded-full h-2.5">
-                  <div
-                    className="bg-blue-600 h-2.5 rounded-full"
-                    style={{ width: `${classItem.progress}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+            Cerrar Sesión
+          </button>
+        </div>
       </div>
+    )
+  }
 
-      {/* Selected Class Details */}
-      {selectedClass && <StudentTable classData={selectedClass} />}
-
-      {/* Create Class Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg w-full max-w-md p-6">
-            <h2 className="text-2xl font-bold mb-4">Create New Class</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Class Name</label>
-                <input
-                  type="text"
-                  name="className"
-                  value={formData.className}
-                  onChange={handleInputChange}
-                  className={`w-full p-2 border rounded ${errors.className ? "border-red-500" : ""}`}
-                />
-                {errors.className && (
-                  <p className="text-red-500 text-sm mt-1">{errors.className}</p>
-                )}
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Subject</label>
-                <input
-                  type="text"
-                  name="subject"
-                  value={formData.subject}
-                  onChange={handleInputChange}
-                  className={`w-full p-2 border rounded ${errors.subject ? "border-red-500" : ""}`}
-                />
-                {errors.subject && (
-                  <p className="text-red-500 text-sm mt-1">{errors.subject}</p>
-                )}
-              </div>
-              <div className="mb-6">
-                <label className="block text-gray-700 mb-2">Schedule</label>
-                <input
-                  type="text"
-                  name="schedule"
-                  value={formData.schedule}
-                  onChange={handleInputChange}
-                  className={`w-full p-2 border rounded ${errors.schedule ? "border-red-500" : ""}`}
-                />
-                {errors.schedule && (
-                  <p className="text-red-500 text-sm mt-1">{errors.schedule}</p>
-                )}
-              </div>
-              <div className="flex justify-end gap-4">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Create Class
-                </button>
-              </div>
-            </form>
+  if (!role && !isAdmin) {
+    return (
+      <div className="w-full max-w-md mx-auto mt-8 bg-white shadow-md rounded-lg overflow-hidden">
+        <div className="px-6 py-4">
+          <h2 className="text-2xl font-bold mb-4">Selecciona tu Rol</h2>
+          <div className="space-y-4">
+            <button
+              onClick={() => handleRoleSelection("estudiante")}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              Estudiante
+            </button>
+            <button
+              onClick={() => handleRoleSelection("maestro")}
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              Maestro
+            </button>
+            <button
+              onClick={() => setIsAdmin(true)}
+              className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              Administrador
+            </button>
           </div>
         </div>
-      )}
-    </div>
-  );
-};
+      </div>
+    )
+  }
 
-export default ClassManagement;
+  return (
+    <div className="w-full max-w-md mx-auto mt-8 bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="px-6 py-4">
+        <h2 className="text-2xl font-bold mb-4">
+          {isAdmin
+            ? isAdminRegister
+              ? "Registro de Administrador"
+              : "Inicio de Sesión (Administrador)"
+            : isRegister
+            ? `Registro (${role})`
+            : `Inicio de Sesión (${role})`}
+        </h2>
+        <form onSubmit={isAdmin ? (isAdminRegister ? handleAdminRegister : handleAdminLogin) : handleFormSubmit} className="space-y-4">
+          <div>
+            <input
+              type="email"
+              placeholder="Correo electrónico"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-3 py-2 placeholder-gray-300 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-indigo-100 focus:border-indigo-300"
+            />
+          </div>
+          <div>
+            <input
+              type="password"
+              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-3 py-2 placeholder-gray-300 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-indigo-100 focus:border-indigo-300"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          >
+            {isAdmin
+              ? isAdminRegister
+                ? "Registrarse como Admin"
+                : "Iniciar Sesión como Admin"
+              : isRegister
+              ? "Registrarse"
+              : "Iniciar Sesión"}
+          </button>
+        </form>
+        <button
+          className="mt-4 w-full text-indigo-500 hover:text-indigo-600 font-semibold"
+          onClick={() => isAdmin ? setIsAdminRegister(!isAdminRegister) : setIsRegister(!isRegister)}
+        >
+          {isAdmin
+            ? isAdminRegister
+              ? "¿Ya tienes cuenta? Inicia sesión"
+              : "¿No tienes cuenta? Regístrate"
+            : isRegister
+            ? "¿Ya tienes una cuenta? Inicia sesión"
+            : "¿No tienes cuenta? Regístrate"}
+        </button>
+        <button
+          className="mt-4 w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          onClick={() => { setRole(""); setIsAdmin(false); setIsAdminRegister(false); }}
+        >
+          Volver
+        </button>
+        {error && <p className="text-red-500 mt-4">{error}</p>}
+        {success && <p className="text-green-500 mt-4">{success}</p>}
+      </div>
+    </div>
+  )
+}
