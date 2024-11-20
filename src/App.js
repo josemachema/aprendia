@@ -5,7 +5,8 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } f
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore"
 import bcrypt from "bcryptjs"
 import app from "./firebaseConfig"
-import DashboardAdmin from "./Administrador/Dashboardadmin";
+import DashboardAdmin from "./Administrador/Dashboardadmin"
+import DashboardAlumnos from "./Alumnos/dashboard/dashboardAlumnos"
 
 const auth = getAuth(app)
 const db = getFirestore(app)
@@ -194,21 +195,25 @@ export default function App() {
   if (isLoggedIn) {
     if (userRole === "admin") {
       return <DashboardAdmin onLogout={handleLogout} />;
-    }
-    return (
-      <div className="w-full max-w-md mx-auto mt-8 bg-white shadow-md rounded-lg overflow-hidden">
-        <div className="px-6 py-4">
-          <h2 className="text-2xl font-bold mb-2">Dashboard {userRole}</h2>
-          <p className="mb-4">Bienvenido, has iniciado sesión como {userRole}.</p>
-          <button
-            onClick={handleLogout}
-            className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            Cerrar Sesión
-          </button>
+    } else if (userRole === "estudiante") {
+      return <DashboardAlumnos userId={auth.currentUser.uid} onLogout={handleLogout} />;
+    } else if (userRole === "maestro") {
+      // You can create and add a DashboardMaestros component here if needed
+      return (
+        <div className="w-full max-w-md mx-auto mt-8 bg-white shadow-md rounded-lg overflow-hidden">
+          <div className="px-6 py-4">
+            <h2 className="text-2xl font-bold mb-2">Dashboard Maestro</h2>
+            <p className="mb-4">Bienvenido, has iniciado sesión como maestro.</p>
+            <button
+              onClick={handleLogout}
+              className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+              Cerrar Sesión
+            </button>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
   }
 
   if (!role && !isAdmin) {
