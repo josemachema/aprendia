@@ -1,5 +1,7 @@
 // Importa la biblioteca de Firebase
 import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore"; // Importar Firestore
+
 
 // Tu configuración de Firebase corregida
 const firebaseConfig = {
@@ -14,5 +16,7 @@ const firebaseConfig = {
 
 // Inicializa Firebase
 const app = initializeApp(firebaseConfig);
+
+export const db = getFirestore(app);
 
 export default app;

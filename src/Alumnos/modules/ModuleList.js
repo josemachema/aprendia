@@ -2,47 +2,24 @@ import React, { useState, useEffect } from "react";
 import { FiSearch } from "react-icons/fi";
 import { BiCheck, BiTime, BiLock } from "react-icons/bi";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../firebase"; // Ajusta la ruta según la ubicación de tu archivo firebaseConfig.js
+import { db } from "../../firebaseConfig"; // Ajusta la ruta según tu estructura
 
 const ModuleList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [modules, setModules] = useState([]); // Estado para los módulos dinámicos
-
-  const categories = [
-    { id: "all", name: "Todas las Categorías" },
-    { id: "programming", name: "Programación" },
-    { id: "web", name: "Desarrollo Web" },
-    { id: "database", name: "Bases de Datos" },
-  ];
-
-  const statusOptions = [
-    { id: "all", name: "Todos los Estados" },
-    { id: "completado", name: "Completado" },
-    { id: "en_progreso", name: "En Progreso" },
-    { id: "no_iniciado", name: "No Iniciado" },
-  ];
+  const [modules, setModules] = useState([]);
 
   useEffect(() => {
     const fetchModules = async () => {
       try {
-        const cursosSnapshot = await getDocs(collection(db, "cursos"));
-        const cursosData = cursosSnapshot.docs.map((doc) => ({
+        const querySnapshot = await getDocs(collection(db, "cursos"));
+        const modulesData = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setModules(
-          cursosData.map((curso) => ({
-            id: curso.id,
-            title: curso.nombreCurso || "Sin título",
-            description: curso.descripcion || "Sin descripción",
-            status: curso.estado || "no_iniciado",
-            category: curso.categoria || "uncategorized",
-          }))
-        );
+        setModules(modulesData);
       } catch (error) {
-        console.error("Error al cargar los cursos desde Firebase:", error);
+        console.error("Error fetching modules:", error);
       }
     };
 
@@ -77,11 +54,10 @@ const ModuleList = () => {
 
   const filteredModules = modules.filter((module) => {
     const matchesSearch =
-      module.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      module.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || module.status === statusFilter;
-    const matchesCategory = categoryFilter === "all" || module.category === categoryFilter;
-    return matchesSearch && matchesStatus && matchesCategory;
+      module.nombreCurso.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || module.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
   return (
@@ -106,23 +82,10 @@ const ModuleList = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            {statusOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A90E2]"
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-          >
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
+            <option value="all">Todos los Estados</option>
+            <option value="completado">Completado</option>
+            <option value="en_progreso">En Progreso</option>
+            <option value="no_iniciado">No Iniciado</option>
           </select>
         </div>
 
@@ -134,16 +97,20 @@ const ModuleList = () => {
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-gray-800">{module.title}</h3>
-                  {getStatusIcon(module.status)}
+                  <h3 className="text-xl font-semibold text-gray-800">{module.nombreCurso}</h3>
+                  {getStatusIcon(module.status || "no_iniciado")}
                 </div>
-                <p className="text-gray-600 mb-4">{module.description}</p>
+                <p className="text-gray-600 mb-4">{module.description || "Sin descripción"}</p>
                 <div className="flex items-center justify-between">
                   <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(module.status)}`}
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      getStatusColor(module.status || "no_iniciado")
+                    }`}
                   >
-                    {module.status.replace("_", " ").charAt(0).toUpperCase() +
-                      module.status.slice(1).replace("_", " ")}
+                    {module.status
+                      ? module.status.charAt(0).toUpperCase() +
+                        module.status.slice(1).replace("_", " ")
+                      : "No Iniciado"}
                   </span>
                   <button className="px-4 py-2 bg-[#4A90E2] text-white rounded-lg hover:bg-blue-600 transition-colors duration-300">
                     Ver Módulo
