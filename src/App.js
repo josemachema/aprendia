@@ -3,7 +3,7 @@ import { updateData } from './updateData';
 
 const App = () => {
   const [data, setData] = useState({
-    campo1: '',
+    username: '',
     campo2: ''
   });
 
@@ -16,15 +16,10 @@ const App = () => {
   };
 
   const handleUpdate = async () => {
-    const collection = 'miColeccion'; // Nombre de tu colección en Firestore
-    const documentId = 'miDocumentoId'; // ID del documento que deseas actualizar
+    const collection = 'usuarios'; // Nombre de tu colección en Firestore
+    const documentId = '5Z7XdcuzZphwcD450BNWy3mesD12'; // ID del documento que deseas actualizar
 
-    try {
-      await updateData(collection, documentId, data);
-      alert('Datos actualizados correctamente');
-    } catch (error) {
-      alert('Error al actualizar los datos');
-    }
+    
   };
 
   return (
@@ -32,9 +27,9 @@ const App = () => {
       <h1>Actualizar Datos en Firebase</h1>
       <input
         type="text"
-        name="campo1"
+        name="username"
         placeholder="Campo 1"
-        value={data.campo1}
+        value={data.username}
         onChange={handleInputChange}
       />
       <br />
