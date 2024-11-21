@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs";
 import DashboardAdmin from "./Administrador/Dashboardadmin";
 import DashboardAlumnos from "./Alumnos/dashboard/dashboardAlumnos";
 import DashboardDocentes from "./Docente/dashboard ";
+import Cuestionario from "./cuestionario";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBZrNoGRaxgPiuFquT7IRzKnebSNijE7ME",
@@ -45,6 +46,7 @@ export default function AuthPage() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const [userRole, setUserRole] = useState(null);
+  const [userRoleRegister, setuserRoleRegister] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAdminRegister, setIsAdminRegister] = useState(false);
   const adminAccessRef = useRef(null);
@@ -133,7 +135,7 @@ export default function AuthPage() {
         });
 
         setSuccess("Usuario registrado con éxito.");
-        setUserRole("estudiante");
+        setuserRoleRegister("estudiante");
       } else {
         // Inicio de sesión
         // Verificar en todas las colecciones
@@ -212,6 +214,15 @@ export default function AuthPage() {
         return <DashboardAlumnos />;
       case "maestro":
         return <DashboardDocentes />;
+      default:
+        return <div>Rol no reconocido</div>;
+    }
+  }
+
+  if (userRoleRegister) {
+    switch(userRoleRegister)  {
+      case "estudiante":
+        return <Cuestionario />;
       default:
         return <div>Rol no reconocido</div>;
     }
