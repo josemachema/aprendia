@@ -9,13 +9,13 @@ const db = getFirestore(app)
 const auth = getAuth(app)
 
 function AdminDashboard({ onLogout }) {
-  const [teachers, setTeachers] = useState([])
+  const [users, setUsers] = useState([])
   const [courses, setCourses] = useState([])
-  const [selectedTeacher, setSelectedTeacher] = useState("")
+  const [selectedUser, setSelectedUser] = useState("")
   const [selectedCourse, setSelectedCourse] = useState("")
   const [newCourseName, setNewCourseName] = useState("")
   const [user, setUser] = useState(null)
-  const [newTeacher, setNewTeacher] = useState({
+  const [newUser, setNewUser] = useState({
     nombre: "",
     apellido: "",
     edad: "",
@@ -30,10 +30,10 @@ function AdminDashboard({ onLogout }) {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser)
       if (currentUser) {
-        const unsubscribeTeachers = fetchTeachers()
+        const unsubscribeUsers = fetchUsers()
         const unsubscribeCourses = subscribeToCoursesUpdates()
         return () => {
-          unsubscribeTeachers()
+          unsubscribeUsers()
           unsubscribeCourses()
         }
       }
@@ -42,17 +42,17 @@ function AdminDashboard({ onLogout }) {
     return () => unsubscribeAuth()
   }, [])
 
-  const fetchTeachers = () => {
-    const teachersCollection = collection(db, "maestros")
-    return onSnapshot(teachersCollection, (snapshot) => {
-      const teachersList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      setTeachers(teachersList)
+  const fetchUsers = () => {
+    const usersCollection = collection(db, "usuarios")
+    return onSnapshot(usersCollection, (snapshot) => {
+      const usersList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      setUsers(usersList)
     }, (error) => {
-      console.error("Error fetching teachers:", error)
+      console.error("Error fetching users:", error)
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Error al cargar los maestros. Por favor, intenta de nuevo.',
+        text: 'Error al cargar los usuarios. Por favor, intenta de nuevo.',
       })
     })
   }
@@ -82,18 +82,18 @@ function AdminDashboard({ onLogout }) {
       return
     }
 
-    if (!selectedTeacher || !selectedCourse) {
+    if (!selectedUser || !selectedCourse) {
       Swal.fire({
         icon: 'warning',
         title: 'Campos incompletos',
-        text: 'Por favor, selecciona un maestro y un curso.',
+        text: 'Por favor, selecciona un usuario y un curso.',
       })
       return
     }
 
     try {
-      const teacherRef = doc(db, "maestros", selectedTeacher)
-      await updateDoc(teacherRef, {
+      const userRef = doc(db, "usuarios", selectedUser)
+      await updateDoc(userRef, {
         courses: arrayUnion(selectedCourse)
       })
       Swal.fire({
@@ -101,7 +101,7 @@ function AdminDashboard({ onLogout }) {
         title: 'Éxito',
         text: 'Curso asignado exitosamente.',
       })
-      setSelectedTeacher("")
+      setSelectedUser("")
       setSelectedCourse("")
     } catch (error) {
       console.error("Error al asignar curso:", error)
@@ -155,12 +155,12 @@ function AdminDashboard({ onLogout }) {
     }
   }
 
-  const handleNewTeacherChange = (e) => {
+  const handleNewUserChange = (e) => {
     const { name, value } = e.target
-    setNewTeacher(prev => ({ ...prev, [name]: value }))
+    setNewUser(prev => ({ ...prev, [name]: value }))
   }
 
-  const addTeacher = async (e) => {
+  const addUser = async (e) => {
     e.preventDefault()
 
     if (!user) {
@@ -173,8 +173,8 @@ function AdminDashboard({ onLogout }) {
     }
 
     // Validación básica
-    for (let field in newTeacher) {
-      if (!newTeacher[field]) {
+    for (let field in newUser) {
+      if (!newUser[field]) {
         Swal.fire({
           icon: 'warning',
           title: 'Campos incompletos',
@@ -186,27 +186,27 @@ function AdminDashboard({ onLogout }) {
 
     try {
       // Crear usuario en Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, newTeacher.email, newTeacher.password)
+      const userCredential = await createUserWithEmailAndPassword(auth, newUser.email, newUser.password)
       
       // Encriptar la contraseña
-      const hashedPassword = await hash(newTeacher.password, 10)
+      const hashedPassword = await hash(newUser.password, 10)
 
       // Crear documento en Firestore
-      const teacherData = {
-        ...newTeacher,
+      const userData = {
+        ...newUser,
         password: hashedPassword,
         uid: userCredential.user.uid
       }
-      delete teacherData.password // No guardamos la contraseña en texto plano
+      delete userData.password // No guardamos la contraseña en texto plano
 
-      await addDoc(collection(db, "maestros"), teacherData)
+      await addDoc(collection(db, "usuarios"), userData)
 
       Swal.fire({
         icon: 'success',
         title: 'Éxito',
-        text: 'Maestro agregado exitosamente.',
+        text: 'Usuario agregado exitosamente.',
       })
-      setNewTeacher({
+      setNewUser({
         nombre: "",
         apellido: "",
         edad: "",
@@ -217,11 +217,11 @@ function AdminDashboard({ onLogout }) {
         rol: "maestro"
       })
     } catch (error) {
-      console.error("Error al agregar maestro:", error)
+      console.error("Error al agregar usuario:", error)
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: `Error al agregar maestro: ${error.message}`,
+        text: `Error al agregar usuario: ${error.message}`,
       })
     }
   }
@@ -235,21 +235,21 @@ function AdminDashboard({ onLogout }) {
       <h1 className="text-3xl font-bold mb-6">Panel de Administrador</h1>
       
       <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-        <h2 className="text-2xl font-bold mb-4">Asignar Curso a Maestro</h2>
+        <h2 className="text-2xl font-bold mb-4">Asignar Curso a Usuario</h2>
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="teacher-select">
-            Maestro
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="user-select">
+            Usuario
           </label>
           <select
-            id="teacher-select"
-            value={selectedTeacher}
-            onChange={(e) => setSelectedTeacher(e.target.value)}
+            id="user-select"
+            value={selectedUser}
+            onChange={(e) => setSelectedUser(e.target.value)}
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
-            <option value="">Selecciona un maestro</option>
-            {teachers.map((teacher) => (
-              <option key={teacher.id} value={teacher.id}>
-                {`${teacher.nombre} ${teacher.apellido} - ${teacher.email}`}
+            <option value="">Selecciona un usuario</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {`${user.nombre} ${user.apellido} - ${user.email}`}
               </option>
             ))}
           </select>
@@ -306,8 +306,8 @@ function AdminDashboard({ onLogout }) {
       </div>
 
       <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-        <h2 className="text-2xl font-bold mb-4">Agregar Nuevo Maestro</h2>
-        <form onSubmit={addTeacher} className="mb-4">
+        <h2 className="text-2xl font-bold mb-4">Agregar Nuevo Usuario</h2>
+        <form onSubmit={addUser} className="mb-4">
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="nombre">
               Nombre
@@ -316,9 +316,9 @@ function AdminDashboard({ onLogout }) {
               id="nombre"
               name="nombre"
               type="text"
-              value={newTeacher.nombre}
-              onChange={handleNewTeacherChange}
-              placeholder="Nombre del maestro"
+              value={newUser.nombre}
+              onChange={handleNewUserChange}
+              placeholder="Nombre del usuario"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
@@ -330,9 +330,9 @@ function AdminDashboard({ onLogout }) {
               id="apellido"
               name="apellido"
               type="text"
-              value={newTeacher.apellido}
-              onChange={handleNewTeacherChange}
-              placeholder="Apellido del maestro"
+              value={newUser.apellido}
+              onChange={handleNewUserChange}
+              placeholder="Apellido del usuario"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
@@ -344,9 +344,9 @@ function AdminDashboard({ onLogout }) {
               id="edad"
               name="edad"
               type="number"
-              value={newTeacher.edad}
-              onChange={handleNewTeacherChange}
-              placeholder="Edad del maestro"
+              value={newUser.edad}
+              onChange={handleNewUserChange}
+              placeholder="Edad del usuario"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
@@ -358,9 +358,9 @@ function AdminDashboard({ onLogout }) {
               id="cedula"
               name="cedula"
               type="text"
-              value={newTeacher.cedula}
-              onChange={handleNewTeacherChange}
-              placeholder="Cédula del maestro"
+              value={newUser.cedula}
+              onChange={handleNewUserChange}
+              placeholder="Cédula del usuario"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
@@ -372,9 +372,9 @@ function AdminDashboard({ onLogout }) {
               id="email"
               name="email"
               type="email"
-              value={newTeacher.email}
-              onChange={handleNewTeacherChange}
-              placeholder="Email del maestro"
+              value={newUser.email}
+              onChange={handleNewUserChange}
+              placeholder="Email del usuario"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
@@ -385,8 +385,8 @@ function AdminDashboard({ onLogout }) {
             <select
               id="genero"
               name="genero"
-              value={newTeacher.genero}
-              onChange={handleNewTeacherChange}
+              value={newUser.genero}
+              onChange={handleNewUserChange}
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             >
               <option value="">Selecciona un género</option>
@@ -403,9 +403,9 @@ function AdminDashboard({ onLogout }) {
               id="password"
               name="password"
               type="password"
-              value={newTeacher.password}
-              onChange={handleNewTeacherChange}
-              placeholder="Contraseña del maestro"
+              value={newUser.password}
+              onChange={handleNewUserChange}
+              placeholder="Contraseña del usuario"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
@@ -413,7 +413,7 @@ function AdminDashboard({ onLogout }) {
             type="submit"
             className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           >
-            Agregar Maestro
+            Agregar Usuario
           </button>
         </form>
       </div>

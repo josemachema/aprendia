@@ -1,14 +1,37 @@
-import React, { useState } from "react";
+'use client'
+
+import React, { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash, FaSpinner } from "react-icons/fa";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 import bcrypt from "bcryptjs";
-import app from "./firebaseConfig"; // Asegúrate de tener el archivo firebaseConfig configurado
+import DashboardAdmin from "./Administrador/Dashboardadmin";
+import DashboardAlumnos from "./Alumnos/dashboard/dashboardAlumnos";
+import DashboardDocentes from "./Docente/dashboard ";
 
-const auth = getAuth(app);
-const db = getFirestore(app);
+const firebaseConfig = {
+  apiKey: "AIzaSyBZrNoGRaxgPiuFquT7IRzKnebSNijE7ME",
+  authDomain: "proyectonacional-9ac68.firebaseapp.com",
+  projectId: "proyectonacional-9ac68",
+  storageBucket: "proyectonacional-9ac68.appspot.com", // Corregido
+  messagingSenderId: "847022716640",
+  appId: "1:847022716640:web:4bf51125d3e8f04a5d8285",
+  measurementId: "G-X98RJHN1HC"
+};
 
-const AuthPage = () => {
+// Inicializar Firebase
+let app;
+let auth;
+let db;
+
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+}
+
+export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -21,6 +44,18 @@ const AuthPage = () => {
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [userRole, setUserRole] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdminRegister, setIsAdminRegister] = useState(false);
+
+  useEffect(() => {
+    // Asegurarse de que Firebase está inicializado
+    if (!app) {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+    }
+  }, []);
 
   const validateEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -41,7 +76,7 @@ const AuthPage = () => {
         }
         break;
       case "password":
-        if (value.length < 8) {
+        if (value.length <5) {
           newErrors.password = "La contraseña debe tener al menos 8 caracteres";
         } else {
           delete newErrors.password;
@@ -82,7 +117,7 @@ const AuthPage = () => {
 
     try {
       if (!isLogin) {
-        // Registro de usuario
+        // Registro de usuario (estudiante o maestro)
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
@@ -93,28 +128,31 @@ const AuthPage = () => {
           username,
           fullName,
           password: hashedPassword,
+          role: "estudiante" // Por defecto, registramos como estudiante
         });
 
         setSuccess("Usuario registrado con éxito.");
+        setUserRole("estudiante");
       } else {
         // Inicio de sesión
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        const docRef = doc(db, "usuarios", user.uid);
-        const docSnap = await getDoc(docRef);
+        // Verificar en la tabla de usuarios
+        const userDocRef = doc(db, "usuarios", user.uid);
+        const adminDocRef = doc(db, "administrador", user.uid);
 
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
-          const isPasswordValid = await bcrypt.compare(password, userData.password);
+        const [userDocSnap, adminDocSnap] = await Promise.all([
+          getDoc(userDocRef),
+          getDoc(adminDocRef)
+        ]);
 
-          if (!isPasswordValid) {
-            throw new Error("Contraseña incorrecta.");
-          }
-
-          setSuccess("Inicio de sesión exitoso.");
+        if (userDocSnap.exists()) {
+          handleUserLogin(userDocSnap, userDocSnap.data().role);
+        } else if (adminDocSnap.exists()) {
+          handleUserLogin(adminDocSnap, "administrador");
         } else {
-          throw new Error("Usuario no encontrado en la base de datos.");
+          throw new Error("Usuario no encontrado.");
         }
       }
     } catch (err) {
@@ -124,22 +162,86 @@ const AuthPage = () => {
     }
   };
 
+  const handleUserLogin = async (docSnap, role) => {
+    const userData = docSnap.data();
+    const isPasswordValid = await bcrypt.compare(formData.password, userData.password);
+
+    if (!isPasswordValid) {
+      throw new Error("Contraseña incorrecta.");
+    }
+
+    setSuccess("Inicio de sesión exitoso.");
+    setUserRole(role);
+  };
+
+  const handleAdminRegister = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    const { email, password } = formData;
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      await setDoc(doc(db, "administrador", user.uid), {
+        email,
+        password: hashedPassword,
+        role: "administrador"
+      });
+
+      setSuccess("Administrador registrado con éxito.");
+      setIsAdminRegister(false);
+    } catch (err) {
+      setError(err.message || "Error al registrar administrador.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (userRole) {
+    switch (userRole) {
+      case "administrador":
+        return <DashboardAdmin />;
+      case "estudiante":
+        return <DashboardAlumnos />;
+      case "maestro":
+        return <DashboardDocentes />;
+      default:
+        return <div>Rol no reconocido</div>;
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
       <div className="bg-[#FFFFFF] rounded-xl shadow-2xl p-8 w-full max-w-md relative overflow-hidden">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-[#333333] mb-2">
-            {isLogin ? "Bienvenido de nuevo" : "Crear cuenta"}
+            {isAdmin
+              ? isAdminRegister
+                ? "Registro de Administrador"
+                : "Inicio de Sesión (Administrador)"
+              : isLogin
+              ? "Bienvenido de nuevo"
+              : "Registro de Estudiante"}
           </h2>
           <p className="text-[#333333]">
-            {isLogin
+            {isAdmin
+              ? isAdminRegister
+                ? "Completa tus datos para registrarte como administrador"
+                : "Inicia sesión como administrador"
+              : isLogin
               ? "Por favor, inicia sesión para continuar"
               : "Completa tus datos para comenzar"}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
+        <form onSubmit={isAdmin && isAdminRegister ? handleAdminRegister : handleSubmit} className="space-y-4">
+          {!isLogin && !isAdmin && (
             <>
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-[#333333] mb-1">
@@ -245,7 +347,13 @@ const AuthPage = () => {
             className="w-full bg-[#4A90E2] hover:bg-[#357ABD] text-white font-semibold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? <FaSpinner className="animate-spin mr-2" /> : null}
-            {isLogin ? "Iniciar sesión" : "Crear cuenta"}
+            {isAdmin
+              ? isAdminRegister
+                ? "Registrarse como Admin"
+                : "Iniciar Sesión como Admin"
+              : isLogin
+              ? "Iniciar sesión"
+              : "Registrarse como estudiante"}
           </button>
         </form>
 
@@ -254,17 +362,50 @@ const AuthPage = () => {
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => {
+              if (isAdmin) {
+                setIsAdminRegister(!isAdminRegister);
+              } else {
+                setIsLogin(!isLogin);
+              }
+            }}
             className="text-[#4A90E2] hover:text-[#357ABD] font-medium transition duration-200"
           >
-            {isLogin
-              ? "¿No tienes una cuenta? Regístrate"
+            {isAdmin
+              ? isAdminRegister
+                ? "¿Ya tienes cuenta? Inicia sesión"
+                : "¿No tienes cuenta? Regístrate"
+              : isLogin
+              ? "¿No tienes una cuenta? Regístrate como estudiante"
               : "¿Ya tienes una cuenta? Inicia sesión"}
           </button>
         </div>
+
+        {!isAdmin && (
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => setIsAdmin(true)}
+              className="text-[#4A90E2] hover:text-[#357ABD] font-medium transition duration-200"
+            >
+              Acceso para administradores
+            </button>
+          </div>
+        )}
+
+        {isAdmin && (
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => {
+                setIsAdmin(false);
+                setIsAdminRegister(false);
+              }}
+              className="text-[#4A90E2] hover:text-[#357ABD] font-medium transition duration-200"
+            >
+              Volver al inicio de sesión normal
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default AuthPage;
+}
