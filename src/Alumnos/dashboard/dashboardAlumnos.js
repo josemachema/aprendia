@@ -2,9 +2,13 @@ import React, { useState } from "react";
 import { FiBook, FiUser, FiClock, FiLogOut, FiBell } from "react-icons/fi";
 import { CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
+import Modulo from "../modules/Modulo"; // Importa el componente Modulo
+import Historial from "../history/Historial"; // Importa el componente Historial
+import Profile from "../profile/profile"; // Importa el componente Profile
 
 const Dashboard = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [activeView, setActiveView] = useState("dashboard"); // Controla la vista activa
 
   const modules = [
     {
@@ -48,6 +52,55 @@ const Dashboard = () => {
     { name: "Social Interaction", value: 90, color: "#00BCD4" }
   ];
 
+  // Vista activa: Modulo
+  if (activeView === "modulo") {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <h1 className="text-2xl font-bold mb-4">Vista de Módulo</h1>
+        <Modulo />
+        <button
+          onClick={() => setActiveView("dashboard")}
+          className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#4A90E2]/90 mt-4"
+        >
+          Volver al Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  // Vista activa: Historial
+  if (activeView === "historial") {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <h1 className="text-2xl font-bold mb-4">Vista de Historial</h1>
+        <Historial />
+        <button
+          onClick={() => setActiveView("dashboard")}
+          className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#4A90E2]/90 mt-4"
+        >
+          Volver al Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  // Vista activa: Perfil
+  if (activeView === "perfil") {
+    return (
+      <div className="min-h-screen bg-white p-8">
+        <h1 className="text-2xl font-bold mb-4">Vista de Perfil</h1>
+        <Profile />
+        <button
+          onClick={() => setActiveView("dashboard")}
+          className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#4A90E2]/90 mt-4"
+        >
+          Volver al Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  // Vista principal: Dashboard
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -63,14 +116,23 @@ const Dashboard = () => {
           </div>
 
           <nav className="hidden md:flex items-center space-x-6">
-            <button className="flex items-center space-x-2 hover:text-gray-200">
-              <FiBook /> <span>Learning Modules</span>
+            <button
+              onClick={() => setActiveView("modulo")}
+              className="flex items-center space-x-2 hover:text-gray-200"
+            >
+              <FiBook /> <span>Modulos de aprendizaje</span>
             </button>
-            <button className="flex items-center space-x-2 hover:text-gray-200">
-              <FiUser /> <span>Profile</span>
+            <button
+              onClick={() => setActiveView("perfil")}
+              className="flex items-center space-x-2 hover:text-gray-200"
+            >
+              <FiUser /> <span>Perfil</span>
             </button>
-            <button className="flex items-center space-x-2 hover:text-gray-200">
-              <FiClock /> <span>History</span>
+            <button
+              onClick={() => setActiveView("historial")}
+              className="flex items-center space-x-2 hover:text-gray-200"
+            >
+              <FiClock /> <span>Historico</span>
             </button>
           </nav>
 
@@ -87,9 +149,7 @@ const Dashboard = () => {
             </button>
             {showProfileMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1">
-                <button
-                  className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 w-full"
-                >
+                <button className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 w-full">
                   <FiLogOut />
                   <span>Logout</span>
                 </button>
@@ -150,7 +210,9 @@ const Dashboard = () => {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 rounded-lg ${notification.type === "warning" ? "bg-[#FFC107]/20" : "bg-[#00BCD4]/20"}`}
+                  className={`p-4 rounded-lg ${
+                    notification.type === "warning" ? "bg-[#FFC107]/20" : "bg-[#00BCD4]/20"
+                  }`}
                 >
                   <p className="text-sm">{notification.message}</p>
                 </div>
