@@ -4,7 +4,7 @@ const { OpenAI } = require("openai");
 
 // Configura OpenAI con tu clave directamente
 const openai = new OpenAI({
-  apiKey: "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",
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 const app = express();
