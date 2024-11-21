@@ -1,13 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { FaBars, FaHome, FaBook, FaUsers, FaChartBar, FaBell, FaEdit, FaTimes } from "react-icons/fa";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
-
-
-
-// Pantallas de ejemplo
-const HomeScreen = () => <h1>Inicio</h1>;
-const ClassesScreen = () => <h1>Clases</h1>;
-
 
 const TeacherDashboard = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -36,7 +29,7 @@ const TeacherDashboard = () => {
     name: "Sara Jiménez",
     role: "Profesora Senior de Matemáticas",
     email: "sara.jimenez@escuela.edu",
-    phone: "(555) 123-4567"
+    phone: "(555) 123-4567",
   });
 
   const handleNotificationDismiss = (id) => {
@@ -63,8 +56,14 @@ const TeacherDashboard = () => {
               <h1 className="text-xl font-bold text-gray-800">Panel del Profesor</h1>
             </div>
             <div className="hidden md:flex items-center space-x-6">
-              <NavLink href="./Docente/clasess" icon={<FaHome />} text="Inicio"  />
-              <NavLink href="./Docente/clasess" icon={<FaBook />} text="Cursos" />
+              {/* Botón Inicio Deshabilitado */}
+              <span className="flex items-center space-x-2 text-gray-400 cursor-not-allowed">
+                <FaHome />
+                <span>Inicio</span>
+              </span>
+
+              {/* Redirección a Modulos.js */}
+              <NavLink href="./Docente/modulos" icon={<FaBook />} text="Cursos" />
               <NavLink href="../Docente/clasess" icon={<FaUsers />} text="Estudiantes" />
               <NavLink href="/" icon={<FaChartBar />} text="Informes" />
             </div>
@@ -79,9 +78,15 @@ const TeacherDashboard = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden bg-white py-2">
             <div className="flex flex-col space-y-2 px-4">
-              <NavLink href="../Docente/clasess" icon={<FaHome />} text="Inicio"  />
-              <NavLink href="../Docente/clasess" icon={<FaBook />} text="Cursos" />
-              <NavLink href="../Docente/clasess"  icon={<FaUsers />} text="Estudiantes" />
+              {/* Botón Inicio Deshabilitado */}
+              <span className="flex items-center space-x-2 text-gray-400 cursor-not-allowed">
+                <FaHome />
+                <span>Inicio</span>
+              </span>
+
+              {/* Redirección a Modulos.js */}
+              <NavLink href="./Docente/modulos" icon={<FaBook />} text="Cursos" />
+              <NavLink href="./Docente/clasess" icon={<FaUsers />} text="Estudiantes" />
               <NavLink href="/" icon={<FaChartBar />} text="Informes" />
             </div>
           </div>
@@ -89,7 +94,6 @@ const TeacherDashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-      
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="flex items-center justify-between mb-4">
@@ -212,15 +216,13 @@ const TeacherDashboard = () => {
   );
 };
 
-const NavLink = ({href, icon, text }) => (
+const NavLink = ({ href, icon, text }) => (
   <a
-  
     href={href}
     className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-200"
   >
     {icon}
     <span>{text}</span>
-   
   </a>
 );
 

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { FiUpload, FiSave, FiLock } from "react-icons/fi";
 import { collection, doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "../../firebaseConfig"; // Asegúrate de ajustar la ruta
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db } from "../../firebaseConfig"; // Configuración de Firebase
+import { getAuth } from "firebase/auth"; // Para obtener el uid del usuario autenticado
 
 const UserProfile = ({ userId }) => {
   const [userData, setUserData] = useState({
-    name: "",
+    fullName: "",
     email: "",
     profileImage: "",
     preferences: {
@@ -13,14 +15,13 @@ const UserProfile = ({ userId }) => {
       visualVerbal: 50,
       sequentialGlobal: 50,
     },
-    password: "",
     newPassword: "",
     confirmPassword: "",
   });
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Obtener datos del perfil del usuario desde Firebase
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -30,7 +31,7 @@ const UserProfile = ({ userId }) => {
           const data = userDoc.data();
           setUserData({
             ...userData,
-            name: data.fullName || "", // Usamos "fullName" según la estructura de Firestore
+            fullName: data.fullName || "",
             email: data.email || "",
             profileImage: data.profileImage || "",
             preferences: data.preferences || {
@@ -39,30 +40,49 @@ const UserProfile = ({ userId }) => {
               sequentialGlobal: 50,
             },
           });
+        } else {
+          setError("No se encontraron datos para este usuario.");
         }
       } catch (error) {
         console.error("Error al obtener los datos del usuario:", error);
+        setError("Hubo un problema al cargar los datos del perfil.");
       } finally {
         setLoading(false);
       }
     };
 
-    if (userId) fetchUserData();
+    if (userId) {
+      fetchUserData();
+    } else {
+      setError("El userId no está disponible. Verifica que el usuario esté autenticado.");
+    }
   }, [userId]);
 
-  // Manejar la carga de imagen de perfil
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUserData({ ...userData, profileImage: reader.result });
-      };
-      reader.readAsDataURL(file);
+      try {
+        setLoading(true);
+        const storage = getStorage();
+        const storageRef = ref(storage, `profileImages/${userId}`);
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+
+        setUserData({ ...userData, profileImage: downloadURL });
+        await updateDoc(doc(collection(db, "usuarios"), userId), {
+          profileImage: downloadURL,
+        });
+
+        alert("Imagen de perfil actualizada con éxito.");
+      } catch (error) {
+        console.error("Error al subir la imagen de perfil:", error);
+        alert("Error al subir la imagen de perfil.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
-  // Actualizar preferencias de aprendizaje
   const handlePreferenceChange = (type, value) => {
     setUserData({
       ...userData,
@@ -70,14 +90,12 @@ const UserProfile = ({ userId }) => {
     });
   };
 
-  // Guardar cambios en Firebase
   const handleSave = async () => {
     try {
       setLoading(true);
       const userRef = doc(collection(db, "usuarios"), userId);
       await updateDoc(userRef, {
-        fullName: userData.name, // Guardamos el valor de "name" en "fullName"
-        profileImage: userData.profileImage,
+        fullName: userData.fullName,
         preferences: userData.preferences,
       });
       alert("Cambios guardados con éxito.");
@@ -89,7 +107,6 @@ const UserProfile = ({ userId }) => {
     }
   };
 
-  // Cambiar contraseña
   const handlePasswordChange = async () => {
     if (userData.newPassword === userData.confirmPassword) {
       try {
@@ -111,6 +128,7 @@ const UserProfile = ({ userId }) => {
   };
 
   if (loading) return <p>Cargando...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div className="min-h-screen bg-white p-6">
@@ -140,8 +158,8 @@ const UserProfile = ({ userId }) => {
                 <label className="block text-sm font-medium text-[#9E9E9E]">Nombre Completo</label>
                 <input
                   type="text"
-                  value={userData.name}
-                  onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                  value={userData.fullName}
+                  onChange={(e) => setUserData({ ...userData, fullName: e.target.value })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#4A90E2] focus:ring-[#4A90E2]"
                 />
               </div>

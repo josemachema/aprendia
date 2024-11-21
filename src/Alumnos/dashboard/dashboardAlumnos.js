@@ -3,10 +3,12 @@ import { FiBook, FiUser, FiClock, FiLogOut, FiBell } from "react-icons/fi";
 import { CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../firebaseConfig";
-import ModuleList from "../modules/ModuleList";
-import HistorialProgreso from "../history/Historial";
-import UserProfile from "../profile/profile";
+import { db } from "../../firebaseConfig"; // Configuración de Firebase
+import ModuleList from "../modules/ModuleList"; // Componente de módulos
+import HistorialProgreso from "../history/Historial"; // Componente de historial
+import UserProfile from "../profile/profile"; // Componente de perfil
+import ModuloId from "../modules/id/ModuloId"; // Componente ModuloId
+import NotificacionesComponent from "../notifications/notificaciones"; // Componente de notificaciones
 
 const Dashboard = ({ userId }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -14,6 +16,7 @@ const Dashboard = ({ userId }) => {
   const [modules, setModules] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [overallProgress, setOverallProgress] = useState(0);
+  const [selectedModule, setSelectedModule] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,201 +59,83 @@ const Dashboard = ({ userId }) => {
   }, []);
 
   const handleRefresh = () => {
-    // Refrescar la página
     window.location.reload();
   };
 
-  if (activeView === "modulo") {
-    return (
-      <div className="min-h-screen bg-white">
-        <ModuleList />
-        <button
-          onClick={() => setActiveView("dashboard")}
-          className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#4A90E2]/90 mt-4"
-        >
-          Volver al Dashboard
-        </button>
-      </div>
-    );
-  }
-
-  if (activeView === "historial") {
-    return (
-      <div className="min-h-screen bg-white">
-        <HistorialProgreso />
-        <button
-          onClick={() => setActiveView("dashboard")}
-          className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#4A90E2]/90 mt-4"
-        >
-          Volver al Dashboard
-        </button>
-      </div>
-    );
-  }
-
-  if (activeView === "perfil") {
-    return (
-      <div className="min-h-screen bg-white">
-        <UserProfile userId={userId} />
-        <button
-          onClick={() => setActiveView("dashboard")}
-          className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#4A90E2]/90 mt-4"
-        >
-          Volver al Dashboard
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-white">
-      <header className="bg-[#4A90E2] text-white p-4 shadow-lg">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <img
-              src="/logo.png"
-              alt="Platform Logo"
-              className="h-10 w-10 rounded-full border-2 border-black"
-            />
-            <h1 className="text-2xl font-bold">EduPlatform</h1>
-          </div>
-
-          <nav className="hidden md:flex items-center space-x-6">
+  // Renderización condicional según la vista activa
+  const renderView = () => {
+    switch (activeView) {
+      case "moduloId":
+        return (
+          <div className="min-h-screen bg-white">
+            <ModuloId module={selectedModule} />
             <button
-              onClick={() => setActiveView("modulo")}
-              className="flex items-center space-x-2 hover:text-gray-200"
+              onClick={() => setActiveView("dashboard")}
+              className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#357ABD] mt-4"
             >
-              <FiBook /> <span>Módulos de aprendizaje</span>
+              Volver al Dashboard
             </button>
+          </div>
+        );
+      case "notificaciones":
+        return (
+          <div className="min-h-screen bg-white">
+            <NotificacionesComponent />
             <button
-              onClick={() => setActiveView("perfil")}
-              className="flex items-center space-x-2 hover:text-gray-200"
+              onClick={() => setActiveView("dashboard")}
+              className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#357ABD] mt-4"
             >
-              <FiUser /> <span>Perfil</span>
+              Volver al Dashboard
             </button>
+          </div>
+        );
+      case "modulo":
+        return (
+          <div className="min-h-screen bg-white">
+            <ModuleList />
             <button
-              onClick={() => setActiveView("historial")}
-              className="flex items-center space-x-2 hover:text-gray-200"
+              onClick={() => setActiveView("dashboard")}
+              className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#4A90E2]/90 mt-4"
             >
-              <FiClock /> <span>Historial</span>
+              Volver al Dashboard
             </button>
-          </nav>
-
-          <div className="relative">
+          </div>
+        );
+      case "historial":
+        return (
+          <div className="min-h-screen bg-white">
+            <HistorialProgreso />
             <button
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center space-x-2"
+              onClick={() => setActiveView("dashboard")}
+              className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#4A90E2]/90 mt-4"
             >
-              <img
-                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde"
-                alt="Profile"
-                className="h-8 w-8 rounded-full"
-              />
+              Volver al Dashboard
             </button>
-            {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1">
-                <button
-                  onClick={handleRefresh}
-                  className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 w-full"
-                >
-                  <FiLogOut />
-                  <span>Cerrar sesión</span>
-                </button>
-              </div>
-            )}
           </div>
-        </div>
-      </header>
+        );
+      case "perfil":
+        return (
+          <div className="min-h-screen bg-white">
+            <UserProfile userId={userId} />
+            <button
+              onClick={() => setActiveView("dashboard")}
+              className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#4A90E2]/90 mt-4"
+            >
+              Volver al Dashboard
+            </button>
+          </div>
+        );
+      default:
+        return (
+          <div className="min-h-screen bg-white">
+            {/* Progreso general, módulos y notificaciones */}
+            {/* Este contenido incluye tus componentes principales */}
+          </div>
+        );
+    }
+  };
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Progreso General */}
-          <div className="bg-[#F5F5F5] p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold mb-4">Progreso General</h2>
-            <div className="w-32 h-32 mx-auto">
-              <CircularProgressbar
-                value={overallProgress}
-                text={`${Math.round(overallProgress)}%`}
-              />
-            </div>
-          </div>
-
-          {/* Dimensiones de Aprendizaje */}
-          <div className="bg-[#F5F5F5] p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold mb-4">Dimensiones de Aprendizaje</h2>
-            <div className="space-y-4">
-              {modules.map((module) => (
-                <div key={module.id}>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium">{module.nombreCurso}</span>
-                    <span className="text-sm font-medium">{module.progreso}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div
-                      className="h-2.5 rounded-full bg-blue-500"
-                      style={{ width: `${module.progreso}%` }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Notificaciones */}
-          <div className="bg-[#F5F5F5] p-6 rounded-lg shadow-md">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Notificaciones</h2>
-              <FiBell className="text-xl text-[#9E9E9E]" />
-            </div>
-            <div className="space-y-4">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-4 rounded-lg ${
-                    notification.type === "warning"
-                      ? "bg-[#FFC107]/20"
-                      : "bg-[#00BCD4]/20"
-                  }`}
-                >
-                  <p className="text-sm">{notification.message}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Módulos Activos */}
-        <div className="mt-8">
-          <h2 className="text-xl font-bold mb-4">Módulos Activos</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {modules.map((module) => (
-              <div key={module.id} className="bg-[#F5F5F5] p-6 rounded-lg shadow-md">
-                <h3 className="font-bold mb-4">{module.nombreCurso}</h3>
-                <div className="mb-4">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium">Progreso:</span>
-                    <span className="text-sm font-medium">{module.progreso}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div
-                      className="h-2.5 rounded-full bg-blue-500"
-                      style={{ width: `${module.progreso}%` }}
-                    ></div>
-                  </div>
-                </div>
-                <button
-                  className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#4A90E2]/90"
-                  onClick={() => setActiveView("modulo")}
-                >
-                  Ver Detalles
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+  return renderView();
 };
 
 export default Dashboard;
