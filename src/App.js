@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FaEye, FaEyeSlash, FaSpinner } from "react-icons/fa";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import bcrypt from "bcryptjs";
 import DashboardAdmin from "./Administrador/Dashboardadmin";
 import DashboardAlumnos from "./Alumnos/dashboard/dashboardAlumnos";
@@ -14,7 +14,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyBZrNoGRaxgPiuFquT7IRzKnebSNijE7ME",
   authDomain: "proyectonacional-9ac68.firebaseapp.com",
   projectId: "proyectonacional-9ac68",
-  storageBucket: "proyectonacional-9ac68.appspot.com", // Corregido
+  storageBucket: "proyectonacional-9ac68.appspot.com",
   messagingSenderId: "847022716640",
   appId: "1:847022716640:web:4bf51125d3e8f04a5d8285",
   measurementId: "G-X98RJHN1HC"
@@ -47,6 +47,7 @@ export default function AuthPage() {
   const [userRole, setUserRole] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAdminRegister, setIsAdminRegister] = useState(false);
+  const adminAccessRef = useRef(null);
 
   useEffect(() => {
     // Asegurarse de que Firebase está inicializado
@@ -76,7 +77,7 @@ export default function AuthPage() {
         }
         break;
       case "password":
-        if (value.length <5) {
+        if (value.length < 6) {
           newErrors.password = "La contraseña debe tener al menos 8 caracteres";
         } else {
           delete newErrors.password;
@@ -135,24 +136,30 @@ export default function AuthPage() {
         setUserRole("estudiante");
       } else {
         // Inicio de sesión
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+        // Verificar en todas las colecciones
+        const collections = ["usuarios", "administrador"];
+        let userFound = false;
 
-        // Verificar en la tabla de usuarios
-        const userDocRef = doc(db, "usuarios", user.uid);
-        const adminDocRef = doc(db, "administrador", user.uid);
+        for (const collectionName of collections) {
+          const q = query(collection(db, collectionName), where("email", "==", email));
+          const querySnapshot = await getDocs(q);
 
-        const [userDocSnap, adminDocSnap] = await Promise.all([
-          getDoc(userDocRef),
-          getDoc(adminDocRef)
-        ]);
+          if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0];
+            const userData = userDoc.data();
+            const isPasswordValid = await bcrypt.compare(password, userData.password);
 
-        if (userDocSnap.exists()) {
-          handleUserLogin(userDocSnap, userDocSnap.data().role);
-        } else if (adminDocSnap.exists()) {
-          handleUserLogin(adminDocSnap, "administrador");
-        } else {
-          throw new Error("Usuario no encontrado.");
+            if (isPasswordValid) {
+              userFound = true;
+              setSuccess("Inicio de sesión exitoso.");
+              setUserRole(userData.role);
+              break;
+            }
+          }
+        }
+
+        if (!userFound) {
+          throw new Error("Usuario no encontrado o contraseña incorrecta.");
         }
       }
     } catch (err) {
@@ -160,18 +167,6 @@ export default function AuthPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleUserLogin = async (docSnap, role) => {
-    const userData = docSnap.data();
-    const isPasswordValid = await bcrypt.compare(formData.password, userData.password);
-
-    if (!isPasswordValid) {
-      throw new Error("Contraseña incorrecta.");
-    }
-
-    setSuccess("Inicio de sesión exitoso.");
-    setUserRole(role);
   };
 
   const handleAdminRegister = async (e) => {
@@ -200,6 +195,12 @@ export default function AuthPage() {
       setError(err.message || "Error al registrar administrador.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const triggerAdminAccess = () => {
+    if (adminAccessRef.current) {
+      adminAccessRef.current.click();
     }
   };
 
@@ -381,16 +382,13 @@ export default function AuthPage() {
           </button>
         </div>
 
-        {!isAdmin && (
-          <div className="mt-4 text-center">
-            <button
-              onClick={() => setIsAdmin(true)}
-              className="text-[#4A90E2] hover:text-[#357ABD] font-medium transition duration-200"
-            >
-              Acceso para administradores
-            </button>
-          </div>
-        )}
+        <button
+          ref={adminAccessRef}
+          onClick={() => setIsAdmin(true)}
+          className="hidden"
+        >
+          Hidden Admin Access
+        </button>
 
         {isAdmin && (
           <div className="mt-4 text-center">

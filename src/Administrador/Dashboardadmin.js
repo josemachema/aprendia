@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from "react"
 import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, arrayUnion } from "firebase/firestore"
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword } from "firebase/auth"
@@ -23,7 +25,7 @@ function AdminDashboard({ onLogout }) {
     email: "",
     genero: "",
     password: "",
-    rol: "maestro"
+    role: "maestro"
   })
 
   useEffect(() => {
@@ -186,7 +188,7 @@ function AdminDashboard({ onLogout }) {
 
     try {
       // Crear usuario en Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, newUser.email, newUser.password)
+      await createUserWithEmailAndPassword(auth, newUser.email, newUser.password)
       
       // Encriptar la contraseña
       const hashedPassword = await hash(newUser.password, 10)
@@ -194,10 +196,8 @@ function AdminDashboard({ onLogout }) {
       // Crear documento en Firestore
       const userData = {
         ...newUser,
-        password: hashedPassword,
-        uid: userCredential.user.uid
+        password: hashedPassword
       }
-      delete userData.password // No guardamos la contraseña en texto plano
 
       await addDoc(collection(db, "usuarios"), userData)
 
@@ -214,7 +214,7 @@ function AdminDashboard({ onLogout }) {
         email: "",
         genero: "",
         password: "",
-        rol: "maestro"
+        role: "maestro"
       })
     } catch (error) {
       console.error("Error al agregar usuario:", error)
