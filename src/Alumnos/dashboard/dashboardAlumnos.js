@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import { FiBook, FiUser, FiClock, FiLogOut, FiBell } from "react-icons/fi";
 import { CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-import Modulo from "../modules/Modulo"; // Importa el componente Modulo
-import Historial from "../history/Historial"; // Importa el componente Historial
-import Profile from "../profile/profile"; // Importa el componente Profile
+import Modulo from "../modules/Modulo";
+import Historial from "../history/Historial";
+import Profile from "../profile/profile";
+import { getAuth, signOut } from "firebase/auth";
 
 const Dashboard = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [activeView, setActiveView] = useState("dashboard"); // Controla la vista activa
+  const [activeView, setActiveView] = useState("dashboard");
 
   const modules = [
     {
@@ -52,7 +53,17 @@ const Dashboard = () => {
     { name: "Social Interaction", value: 90, color: "#00BCD4" }
   ];
 
-  // Vista activa: Modulo
+  const handleLogout = async () => {
+    const auth = getAuth();
+    try {
+      await signOut(auth);
+      // Redirect to the auth page
+      window.location.href = '/auth';
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
+  };
+
   if (activeView === "modulo") {
     return (
       <div className="min-h-screen bg-white p-8">
@@ -68,7 +79,6 @@ const Dashboard = () => {
     );
   }
 
-  // Vista activa: Historial
   if (activeView === "historial") {
     return (
       <div className="min-h-screen bg-white p-8">
@@ -84,7 +94,6 @@ const Dashboard = () => {
     );
   }
 
-  // Vista activa: Perfil
   if (activeView === "perfil") {
     return (
       <div className="min-h-screen bg-white p-8">
@@ -100,10 +109,8 @@ const Dashboard = () => {
     );
   }
 
-  // Vista principal: Dashboard
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
       <header className="bg-[#4A90E2] text-white p-4 shadow-lg">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-4">
@@ -149,7 +156,10 @@ const Dashboard = () => {
             </button>
             {showProfileMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1">
-                <button className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 w-full">
+                <button 
+                  onClick={handleLogout}
+                  className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 w-full"
+                >
                   <FiLogOut />
                   <span>Logout</span>
                 </button>
@@ -161,7 +171,6 @@ const Dashboard = () => {
 
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Progress Overview */}
           <div className="bg-[#F5F5F5] p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-bold mb-4">Overall Progress</h2>
             <div className="w-32 h-32 mx-auto">
@@ -176,7 +185,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Learning Dimensions */}
           <div className="bg-[#F5F5F5] p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-bold mb-4">Learning Dimensions</h2>
             <div className="space-y-4">
@@ -200,7 +208,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Notifications */}
           <div className="bg-[#F5F5F5] p-6 rounded-lg shadow-md">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">Notifications</h2>
@@ -221,7 +228,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Active Modules */}
         <div className="mt-8">
           <h2 className="text-xl font-bold mb-4">Active Modules</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -256,3 +262,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
