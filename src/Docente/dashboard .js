@@ -65,8 +65,8 @@ const TeacherDashboard = () => {
             
         <NavLink to="/teacher" icon={<FaHome />} text="Inicio" />
         <NavLink to="/teacher/class" icon={<FaBook />} text="Cursos" />
-        <NavLink to="/Docente/estudiantes" icon={<FaUsers />} text="Estudiantes" />
-        <NavLink to="/informes" icon={<FaChartBar />} text="Informes" />
+        <NavLink to="/teacher/modulo" icon={<FaUsers />} text="Generar Actividad" />
+        <NavLink to="/teacher/reporte" icon={<FaChartBar />} text="Informes" />
             </div>
             <button
               className="md:hidden"
@@ -81,8 +81,8 @@ const TeacherDashboard = () => {
             <div className="flex flex-col space-y-2 px-4">
         <NavLink to="/teacher" icon={<FaHome />} text="Inicio"  />
         <NavLink to="teacher/class" icon={<FaBook />} text="Cursos" />
-        <NavLink to="/Docente/estudiantes" icon={<FaUsers />} text="Estudiantes" />
-        <NavLink to="/informes" icon={<FaChartBar />} text="Informes" />
+        <NavLink to="/teacher/modulo" icon={<FaUsers />} text="Generar Actividad" />
+        <NavLink to="/teacher/reporte" icon={<FaChartBar />} text="Informes" />
             </div>
           </div>
         )}

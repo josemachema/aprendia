@@ -7,7 +7,7 @@ import {
 } from "react-icons/fi";
 import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import firebaseApp from "./firebaseConfig";
+import firebaseApp from "../firebaseConfig";
 
 const db = getFirestore(firebaseApp);
 const storage = getStorage(firebaseApp);
