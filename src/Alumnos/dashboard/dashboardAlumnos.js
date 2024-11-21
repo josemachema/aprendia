@@ -3,11 +3,12 @@ import { FiBook, FiUser, FiClock, FiLogOut, FiBell } from "react-icons/fi";
 import { CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../firebaseConfig"; // Ajusta la ruta según tu estructura
-import ModuleList from "../modules/ModuleList"; // Vista de módulos de aprendizaje
-import HistorialProgreso from "../history/Historial"; // Vista del historial
+import { db } from "../../firebaseConfig"; // Configuración de Firebase
+import ModuleList from "../modules/ModuleList"; // Componente de módulos
+import HistorialProgreso from "../history/Historial"; // Componente de historial
+import UserProfile from "../profile/profile"; // Componente de perfil
 
-const Dashboard = () => {
+const Dashboard = ({ userId }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [activeView, setActiveView] = useState("dashboard");
   const [modules, setModules] = useState([]);
@@ -30,7 +31,7 @@ const Dashboard = () => {
         const averageProgress = cursosData.length > 0 ? totalProgress / cursosData.length : 0;
         setOverallProgress(averageProgress);
 
-        // Obtener fechas importantes y generar notificaciones
+        // Obtener notificaciones desde Firebase
         const fechasSnapshot = await getDocs(collection(db, "FechasImportantes"));
         const fechasData = fechasSnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -65,7 +66,7 @@ const Dashboard = () => {
     );
   }
 
-  // Vista del historial
+  // Vista de historial
   if (activeView === "historial") {
     return (
       <div className="min-h-screen bg-white">
@@ -80,11 +81,11 @@ const Dashboard = () => {
     );
   }
 
+  // Vista de perfil
   if (activeView === "perfil") {
     return (
-      <div className="min-h-screen bg-white p-8">
-        <h1 className="text-2xl font-bold mb-4">Vista de Perfil</h1>
-        {/* Aquí puedes renderizar el componente de perfil */}
+      <div className="min-h-screen bg-white">
+        <UserProfile userId={userId} />
         <button
           onClick={() => setActiveView("dashboard")}
           className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#4A90E2]/90 mt-4"
@@ -122,7 +123,7 @@ const Dashboard = () => {
               onClick={() => setActiveView("historial")}
               className="flex items-center space-x-2 hover:text-gray-200"
             >
-              <FiClock /> <span>Histórico</span>
+              <FiClock /> <span>Historial</span>
             </button>
           </nav>
 
@@ -145,10 +146,9 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {/* General Progress */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Progreso General */}
           <div className="bg-[#F5F5F5] p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-bold mb-4">Progreso General</h2>
             <div className="w-32 h-32 mx-auto">
@@ -156,7 +156,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Learning Dimensions */}
+          {/* Dimensiones de Aprendizaje */}
           <div className="bg-[#F5F5F5] p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-bold mb-4">Dimensiones de Aprendizaje</h2>
             <div className="space-y-4">
@@ -177,7 +177,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Notifications */}
+          {/* Notificaciones */}
           <div className="bg-[#F5F5F5] p-6 rounded-lg shadow-md">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">Notificaciones</h2>
@@ -198,7 +198,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Active Modules */}
+        {/* Módulos Activos */}
         <div className="mt-8">
           <h2 className="text-xl font-bold mb-4">Módulos Activos</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
