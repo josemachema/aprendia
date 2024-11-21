@@ -7,6 +7,8 @@ import { db } from "../../firebaseConfig"; // Configuración de Firebase
 import ModuleList from "../modules/ModuleList"; // Componente de módulos
 import HistorialProgreso from "../history/Historial"; // Componente de historial
 import UserProfile from "../profile/profile"; // Componente de perfil
+import ModuloId from "../modules/id/ModuloId"; // Componente ModuloId
+import NotificacionesComponent from "../notifications/notificaciones"; // Componente de notificaciones
 
 const Dashboard = ({ userId }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -14,6 +16,7 @@ const Dashboard = ({ userId }) => {
   const [modules, setModules] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [overallProgress, setOverallProgress] = useState(0);
+  const [selectedModule, setSelectedModule] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,6 +53,36 @@ const Dashboard = ({ userId }) => {
 
     fetchData();
   }, []);
+
+  // Vista para ModuloId
+  if (activeView === "moduloId" && selectedModule) {
+    return (
+      <div className="min-h-screen bg-white">
+        <ModuloId module={selectedModule} />
+        <button
+          onClick={() => setActiveView("dashboard")}
+          className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#357ABD] mt-4"
+        >
+          Volver al Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  // Vista de notificaciones
+  if (activeView === "notificaciones") {
+    return (
+      <div className="min-h-screen bg-white">
+        <NotificacionesComponent />
+        <button
+          onClick={() => setActiveView("dashboard")}
+          className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#357ABD] mt-4"
+        >
+          Volver al Dashboard
+        </button>
+      </div>
+    );
+  }
 
   // Vista de módulos de aprendizaje
   if (activeView === "modulo") {
@@ -125,6 +158,12 @@ const Dashboard = ({ userId }) => {
             >
               <FiClock /> <span>Historial</span>
             </button>
+            <button
+              onClick={() => setActiveView("notificaciones")}
+              className="flex items-center space-x-2 hover:text-gray-200"
+            >
+              <FiBell /> <span>Notificaciones</span>
+            </button>
           </nav>
 
           <div className="relative">
@@ -147,7 +186,7 @@ const Dashboard = ({ userId }) => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Progreso General */}
           <div className="bg-[#F5F5F5] p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-bold mb-4">Progreso General</h2>
@@ -157,7 +196,7 @@ const Dashboard = ({ userId }) => {
           </div>
 
           {/* Dimensiones de Aprendizaje */}
-          <div className="bg-[#F5F5F5] p-6 rounded-lg shadow-md">
+          <div className="bg-[#F5F5F5] p-6 rounded-lg shadow-md col-span-2">
             <h2 className="text-xl font-bold mb-4">Dimensiones de Aprendizaje</h2>
             <div className="space-y-4">
               {modules.map((module) => (
@@ -217,7 +256,13 @@ const Dashboard = ({ userId }) => {
                     ></div>
                   </div>
                 </div>
-                <button className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#357ABD] w-full">
+                <button
+                  onClick={() => {
+                    setSelectedModule(module);
+                    setActiveView("moduloId");
+                  }}
+                  className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#357ABD] w-full"
+                >
                   Continuar
                 </button>
               </div>
