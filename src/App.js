@@ -1,270 +1,246 @@
-import React, { useState } from "react";
-import { FaEye, FaEyeSlash, FaSpinner } from "react-icons/fa";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
-import bcrypt from "bcryptjs";
-import app from "./firebaseConfig"; // Asegúrate de tener el archivo firebaseConfig configurado
+import React, { useState, useEffect } from "react";
+import { FaBars, FaHome, FaBook, FaUsers, FaChartBar, FaBell, FaEdit, FaTimes } from "react-icons/fa";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
+import cursos from "./Docente/clases";
 
-const auth = getAuth(app);
-const db = getFirestore(app);
+const TeacherDashboard = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState("dashboard");
+  const [notifications, setNotifications] = useState([
+    { id: 1, message: "Nueva tarea enviada por Juan Pérez", read: false },
+    { id: 2, message: "Reunión de personal a las 15:00 hoy", read: false },
+    { id: 3, message: "Conferencia de padres y maestros la próxima semana", read: false },
+  ]);
 
-const AuthPage = () => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    username: "",
-    fullName: ""
+  const routes = {
+    courses: "./Docente/clases.js",
+    students: "/path/to/students.csv",
+    reports: "/path/to/reports.docx",
+  };
+  
+
+  const mockStudentData = [
+    { subject: "Matemáticas", students: 85 },
+    { subject: "Ciencias", students: 75 },
+    { subject: "Español", students: 92 },
+    { subject: "Historia", students: 68 },
+  ];
+
+  const pieData = [
+    { name: "Activo", value: 70 },
+    { name: "Inactivo", value: 30 },
+  ];
+
+  const COLORS = ["#4F46E5", "#E5E7EB"];
+
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: "Sara Jiménez",
+    role: "Profesora Senior de Matemáticas",
+    email: "sara.jimenez@escuela.edu",
+    phone: "(555) 123-4567"
   });
-  const [errors, setErrors] = useState({});
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
 
-  const validateEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
+  const handleNotificationDismiss = (id) => {
+    setNotifications(notifications.map(notif =>
+      notif.id === id ? { ...notif, read: true } : notif
+    ));
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-
-    const newErrors = { ...errors };
-    switch (name) {
-      case "email":
-        if (!validateEmail(value)) {
-          newErrors.email = "Formato de correo electrónico inválido";
-        } else {
-          delete newErrors.email;
-        }
-        break;
-      case "password":
-        if (value.length < 8) {
-          newErrors.password = "La contraseña debe tener al menos 8 caracteres";
-        } else {
-          delete newErrors.password;
-        }
-        break;
-      case "username":
-        if (value.length < 3) {
-          newErrors.username = "El nombre de usuario debe tener al menos 3 caracteres";
-        } else {
-          delete newErrors.username;
-        }
-        break;
-      case "fullName":
-        if (value.trim() === "") {
-          newErrors.fullName = "El nombre completo es requerido";
-        } else {
-          delete newErrors.fullName;
-        }
-        break;
-      default:
-        break;
-    }
-    setErrors(newErrors);
+  const handleProfileUpdate = () => {
+    setIsEditMode(false);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess("");
-
-    if (Object.keys(errors).length > 0) {
-      setLoading(false);
-      return;
+  const handleNavigation = (page, path) => {
+    setCurrentPage(page);
+    // Handle file path navigation if provided
+    if (path) {
+      console.log(`Navigating to file: ${path}`);
+      // Add your file navigation logic here
     }
+  };
 
-    const { email, password, username, fullName } = formData;
+  const renderContent = () => {
+    switch(currentPage) {
+      case "dashboard":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Perfil</h2>
+                <button
+                  onClick={() => setIsEditMode(!isEditMode)}
+                  className="text-blue-600 hover:text-blue-800"
+                  aria-label="Editar perfil"
+                >
+                  <FaEdit size={20} />
+                </button>
+              </div>
+              <div className="flex flex-col items-center">
+                <img
+                  src="images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80"
+                  alt="Perfil del profesor"
+                  className="w-32 h-32 rounded-full mb-4"
+                />
+                {isEditMode ? (
+                  <div className="space-y-4 w-full">
+                    <input
+                      type="text"
+                      value={profileData.name}
+                      onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                      className="w-full p-2 border rounded"
+                    />
+                    <input
+                      type="text"
+                      value={profileData.role}
+                      onChange={(e) => setProfileData({ ...profileData, role: e.target.value })}
+                      className="w-full p-2 border rounded"
+                    />
+                    <button
+                      onClick={handleProfileUpdate}
+                      className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+                    >
+                      Guardar Cambios
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold">{profileData.name}</h3>
+                    <p className="text-gray-600">{profileData.role}</p>
+                    <p className="text-gray-600">{profileData.email}</p>
+                    <p className="text-gray-600">{profileData.phone}</p>
+                  </div>
+                )}
+              </div>
+            </div>
 
-    try {
-      if (!isLogin) {
-        // Registro de usuario
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+            <div className="lg:col-span-2 space-y-8">
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <h2 className="text-xl font-semibold mb-4">Distribución de Estudiantes</h2>
+                <div className="h-64">
+                  <BarChart
+                    width={500}
+                    height={250}
+                    data={mockStudentData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="subject" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="students" fill="#4F46E5" />
+                  </BarChart>
+                </div>
+              </div>
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                  <h2 className="text-xl font-semibold mb-4">Estado de Estudiantes</h2>
+                  <PieChart width={250} height={250}>
+                    <Pie
+                      data={pieData}
+                      cx={120}
+                      cy={120}
+                      innerRadius={60}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </div>
 
-        await setDoc(doc(db, "usuarios", user.uid), {
-          email,
-          username,
-          fullName,
-          password: hashedPassword,
-        });
-
-        setSuccess("Usuario registrado con éxito.");
-      } else {
-        // Inicio de sesión
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        const docRef = doc(db, "usuarios", user.uid);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
-          const isPasswordValid = await bcrypt.compare(password, userData.password);
-
-          if (!isPasswordValid) {
-            throw new Error("Contraseña incorrecta.");
-          }
-
-          setSuccess("Inicio de sesión exitoso.");
-        } else {
-          throw new Error("Usuario no encontrado en la base de datos.");
-        }
-      }
-    } catch (err) {
-      setError(err.message || "Ocurrió un error.");
-    } finally {
-      setLoading(false);
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                  <h2 className="text-xl font-semibold mb-4">Notificaciones</h2>
+                  <div className="space-y-4">
+                    {notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-4 rounded-lg ${notification.read ? "bg-gray-100" : "bg-blue-50"} flex justify-between items-start`}
+                      >
+                        <p className="text-gray-700">{notification.message}</p>
+                        {!notification.read && (
+                          <button
+                            onClick={() => handleNotificationDismiss(notification.id)}
+                            className="text-gray-500 hover:text-gray-700"
+                            aria-label="Descartar notificación"
+                          >
+                            <FaTimes />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
-      <div className="bg-[#FFFFFF] rounded-xl shadow-2xl p-8 w-full max-w-md relative overflow-hidden">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-[#333333] mb-2">
-            {isLogin ? "Bienvenido de nuevo" : "Crear cuenta"}
-          </h2>
-          <p className="text-[#333333]">
-            {isLogin
-              ? "Por favor, inicia sesión para continuar"
-              : "Completa tus datos para comenzar"}
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <>
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-[#333333] mb-1">
-                  Nombre de usuario
-                </label>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className={`w-full px-4 py-2 rounded-lg border ${
-                    errors.username ? "border-[#F44336]" : "border-gray-300"
-                  } focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent transition duration-200 outline-none`}
-                  placeholder="Ingresa tu nombre de usuario"
-                  aria-label="Nombre de usuario"
-                />
-                {errors.username && (
-                  <p className="text-[#F44336] text-sm mt-1">{errors.username}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-[#333333] mb-1">
-                  Nombre completo
-                </label>
-                <input
-                  type="text"
-                  id="fullName"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleInputChange}
-                  className={`w-full px-4 py-2 rounded-lg border ${
-                    errors.fullName ? "border-[#F44336]" : "border-gray-300"
-                  } focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent transition duration-200 outline-none`}
-                  placeholder="Ingresa tu nombre completo"
-                  aria-label="Nombre completo"
-                />
-                {errors.fullName && (
-                  <p className="text-[#F44336] text-sm mt-1">{errors.fullName}</p>
-                )}
-              </div>
-            </>
-          )}
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-[#333333] mb-1">
-              Correo electrónico
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              className={`w-full px-4 py-2 rounded-lg border ${
-                errors.email ? "border-[#F44336]" : "border-gray-300"
-              } focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent transition duration-200 outline-none`}
-              placeholder="Ingresa tu correo electrónico"
-              aria-label="Correo electrónico"
-              autoComplete="email"
-            />
-            {errors.email && (
-              <p className="text-[#F44336] text-sm mt-1">{errors.email}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-[#333333] mb-1">
-              Contraseña
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-2 rounded-lg border ${
-                  errors.password ? "border-[#F44336]" : "border-gray-300"
-                } focus:ring-2 focus:ring-[#4A90E2] focus:border-transparent transition duration-200 outline-none pr-10`}
-                placeholder="Ingresa tu contraseña"
-                aria-label="Contraseña"
-                autoComplete="current-password"
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
+        <nav className="container mx-auto px-4 py-3">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <img
+                src="images.unsplash.com/photo-1550831107-1553da8c8464?auto=format&fit=crop&w=100&q=80"
+                alt="Logo de la Escuela"
+                className="h-10 w-10 rounded-full"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#333333] hover:text-[#4A90E2] focus:outline-none"
-                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
+              <h1 className="text-xl font-bold text-gray-800">Panel del Profesor</h1>
             </div>
-            {errors.password && (
-              <p className="text-[#F44336] text-sm mt-1">{errors.password}</p>
-            )}
+            <div className="hidden md:flex items-center space-x-6">
+              <NavLink icon={<FaHome />} text="Inicio" onClick={() => handleNavigation("dashboard", "/dashboard")} />
+              <NavLink icon={<FaBook />} text="Cursos" onClick={() => handleNavigation("cursos", "cursos" )} />
+              <NavLink icon={<FaUsers />} text="Estudiantes" onClick={() => handleNavigation("students", "/students")} />
+              <NavLink icon={<FaChartBar />} text="Informes" onClick={() => handleNavigation("reports", "/reports")} />
+            </div>
+            <button
+              className="md:hidden"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+            </button>
           </div>
+        </nav>
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-white py-2">
+            <div className="flex flex-col space-y-2 px-4">
+              <NavLink icon={<FaHome />} text="Inicio" onClick={() => handleNavigation("dashboard", "/dashboard")} />
+              <NavLink icon={<FaBook />} text="Cursos" onClick={() => handleNavigation("courses", "/courses")} />
+              <NavLink icon={<FaUsers />} text="Estudiantes" onClick={() => handleNavigation("students", "/students")} />
+              <NavLink icon={<FaChartBar />} text="Informes" onClick={() => handleNavigation("reports", "/reports")} />
+            </div>
+          </div>
+        )}
+      </header>
 
-          <button
-            type="submit"
-            disabled={loading || Object.keys(errors).length > 0}
-            className="w-full bg-[#4A90E2] hover:bg-[#357ABD] text-white font-semibold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? <FaSpinner className="animate-spin mr-2" /> : null}
-            {isLogin ? "Iniciar sesión" : "Crear cuenta"}
-          </button>
-        </form>
-
-        {error && <p className="text-[#F44336] mt-4">{error}</p>}
-        {success && <p className="text-[#4CAF50] mt-4">{success}</p>}
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-[#4A90E2] hover:text-[#357ABD] font-medium transition duration-200"
-          >
-            {isLogin
-              ? "¿No tienes una cuenta? Regístrate"
-              : "¿Ya tienes una cuenta? Inicia sesión"}
-          </button>
-        </div>
-      </div>
+      <main className="container mx-auto px-4 py-8 mt-20">
+        {renderContent()}
+      </main>
     </div>
   );
 };
 
-export default AuthPage;
+const NavLink = ({ icon, text, onClick }) => (
+  <button
+    onClick={onClick}
+    className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-200"
+  >
+    {icon}
+    <span>{text}</span>
+  </button>
+);
+
+
+
+export default TeacherDashboard;
