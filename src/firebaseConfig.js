@@ -1,5 +1,5 @@
-// Importa la biblioteca de Firebase
 import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
 
 // Tu configuración de Firebase corregida
 const firebaseConfig = {
@@ -12,7 +12,7 @@ const firebaseConfig = {
   measurementId: "G-X98RJHN1HC"
 };
 
-// Inicializa Firebase
 const app = initializeApp(firebaseConfig);
 
-export default app;
+// Exportar Firestore como un named export
+export const firestore = getFirestore(app);
