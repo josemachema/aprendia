@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from "react"
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, arrayUnion, query, where, getDocs } from "firebase/firestore"
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, arrayUnion, query, where, getDocs, deleteDoc } from "firebase/firestore"
 import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "firebase/auth"
 import { hash } from "bcryptjs"
 import Swal from 'sweetalert2'
@@ -54,7 +54,6 @@ export default function AdminDashboard() {
       } else {
         setMaestros([]);
         setCourses([]);
-        // Redirect to login page if user is not authenticated
         window.location.href = '/LocalHost:3000';
       }
     });
@@ -67,14 +66,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
-        // El usuario no está autenticado, redirigir a la página de login
         window.location.href = '/LocalHost:3000';
       }
     });
 
     return () => unsubscribe();
   }, []);
-
 
   const fetchMaestros = () => {
     if (!auth.currentUser) return;
@@ -302,6 +299,60 @@ export default function AdminDashboard() {
     });
   };
 
+  const handleDeleteMaestro = async (maestroId) => {
+    if (!user) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Debes estar autenticado para realizar esta acción.',
+      })
+      return
+    }
+
+    try {
+      await deleteDoc(doc(db, "usuarios", maestroId))
+      Swal.fire({
+        icon: 'success',
+        title: 'Éxito',
+        text: 'Maestro eliminado exitosamente.',
+      })
+    } catch (error) {
+      console.error("Error al eliminar maestro:", error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `Error al eliminar maestro: ${error.message}`,
+      })
+    }
+  }
+
+  const handleDeleteCourse = async (courseId) => {
+    if (!user) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Debes estar autenticado para realizar esta acción.',
+      })
+      return
+    }
+
+    try {
+      await deleteDoc(doc(db, "cursos", courseId))
+      Swal.fire({
+        icon: 'success',
+        title: 'Éxito',
+        text: 'Curso eliminado exitosamente.',
+      })
+    } catch (error) {
+      console.error("Error al eliminar curso:", error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `Error al eliminar curso: ${error.message}`,
+      })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="sticky top-0 z-50 w-full border-b bg-gradient-to-r from-blue-600 to-blue-700">
@@ -411,15 +462,31 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setSelectedMaestro(maestro)
-                      setShowAssignCourse(true)
-                    }}
-                    className="px-3 py-1 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
-                  >
-                    Asignar Curso
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedMaestro(maestro)
+                        setShowAssignCourse(true)
+                      }}
+                      className="px-3 py-1 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
+                    >
+                      Asignar Curso
+                    </button>
+                    <button
+                      onClick={() => {
+                        console.log("Edit maestro:", maestro.id)
+                      }}
+                      className="px-3 py-1 bg-yellow-100 text-yellow-600 rounded-md hover:bg-yellow-200"
+                    >
+                      Modificar
+                    </button>
+                    <button
+                      onClick={() => handleDeleteMaestro(maestro.id)}
+                      className="px-3 py-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -433,8 +500,24 @@ export default function AdminDashboard() {
           <div className="p-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {courses.map((course) => (
-                <div key={course.id} className="p-4 border rounded-lg">
+                <div key={course.id} className="p-4 border rounded-lg flex justify-between items-center">
                   <h3 className="font-medium">{course.nombreCurso}</h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        console.log("Edit course:", course.id)
+                      }}
+                      className="px-2 py-1 bg-yellow-100 text-yellow-600 rounded-md hover:bg-yellow-200 text-sm"
+                    >
+                      Modificar
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCourse(course.id)}
+                      className="px-2 py-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200 text-sm"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -613,4 +696,3 @@ export default function AdminDashboard() {
     </div>
   )
 }
-

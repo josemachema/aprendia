@@ -4,7 +4,6 @@ import { CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
-import { getAuth, signOut } from "firebase/auth";
 import ModuleList from "../modules/ModuleList";
 import HistorialProgreso from "../history/Historial";
 import UserProfile from "../profile/profile";
@@ -28,8 +27,12 @@ const Dashboard = ({ userId }) => {
         setModules(cursosData);
 
         // Calcular progreso general
-        const totalProgress = cursosData.reduce((acc, curso) => acc + (curso.progreso || 0), 0);
-        const averageProgress = cursosData.length > 0 ? totalProgress / cursosData.length : 0;
+        const totalProgress = cursosData.reduce(
+          (acc, curso) => acc + (curso.progreso || 0),
+          0
+        );
+        const averageProgress =
+          cursosData.length > 0 ? totalProgress / cursosData.length : 0;
         setOverallProgress(averageProgress);
 
         // Obtener notificaciones desde Firebase
@@ -52,15 +55,9 @@ const Dashboard = ({ userId }) => {
     fetchData();
   }, []);
 
-  const handleLogout = async () => {
-    const auth = getAuth();
-    try {
-      await signOut(auth);
-      // Redirect to the auth page
-      window.location.href = '/auth';
-    } catch (error) {
-      console.error("Error signing out: ", error);
-    }
+  const handleRefresh = () => {
+    // Refrescar la página
+    window.location.reload();
   };
 
   if (activeView === "modulo") {
@@ -110,7 +107,11 @@ const Dashboard = ({ userId }) => {
       <header className="bg-[#4A90E2] text-white p-4 shadow-lg">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <img src="/logo.png" alt="Platform Logo" className="h-10 w-10 rounded-full border-2 border-black" />
+            <img
+              src="/logo.png"
+              alt="Platform Logo"
+              className="h-10 w-10 rounded-full border-2 border-black"
+            />
             <h1 className="text-2xl font-bold">EduPlatform</h1>
           </div>
 
@@ -140,16 +141,20 @@ const Dashboard = ({ userId }) => {
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="flex items-center space-x-2"
             >
-              <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde" alt="Profile" className="h-8 w-8 rounded-full" />
+              <img
+                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde"
+                alt="Profile"
+                className="h-8 w-8 rounded-full"
+              />
             </button>
             {showProfileMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1">
-                <button 
-                  onClick={handleLogout}
+                <button
+                  onClick={handleRefresh}
                   className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 w-full"
                 >
                   <FiLogOut />
-                  <span>Logout</span>
+                  <span>Cerrar sesión</span>
                 </button>
               </div>
             )}
@@ -163,7 +168,10 @@ const Dashboard = ({ userId }) => {
           <div className="bg-[#F5F5F5] p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-bold mb-4">Progreso General</h2>
             <div className="w-32 h-32 mx-auto">
-              <CircularProgressbar value={overallProgress} text={`${Math.round(overallProgress)}%`} />
+              <CircularProgressbar
+                value={overallProgress}
+                text={`${Math.round(overallProgress)}%`}
+              />
             </div>
           </div>
 
@@ -199,7 +207,9 @@ const Dashboard = ({ userId }) => {
                 <div
                   key={notification.id}
                   className={`p-4 rounded-lg ${
-                    notification.type === "warning" ? "bg-[#FFC107]/20" : "bg-[#00BCD4]/20"
+                    notification.type === "warning"
+                      ? "bg-[#FFC107]/20"
+                      : "bg-[#00BCD4]/20"
                   }`}
                 >
                   <p className="text-sm">{notification.message}</p>
@@ -218,18 +228,21 @@ const Dashboard = ({ userId }) => {
                 <h3 className="font-bold mb-4">{module.nombreCurso}</h3>
                 <div className="mb-4">
                   <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium">Progreso</span>
+                    <span className="text-sm font-medium">Progreso:</span>
                     <span className="text-sm font-medium">{module.progreso}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2.5">
                     <div
-                      className="bg-[#4CAF50] h-2.5 rounded-full"
+                      className="h-2.5 rounded-full bg-blue-500"
                       style={{ width: `${module.progreso}%` }}
                     ></div>
                   </div>
                 </div>
-                <button className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#357ABD] w-full">
-                  Continuar
+                <button
+                  className="bg-[#4A90E2] text-white px-4 py-2 rounded-md hover:bg-[#4A90E2]/90"
+                  onClick={() => setActiveView("modulo")}
+                >
+                  Ver Detalles
                 </button>
               </div>
             ))}
@@ -241,4 +254,3 @@ const Dashboard = ({ userId }) => {
 };
 
 export default Dashboard;
-
